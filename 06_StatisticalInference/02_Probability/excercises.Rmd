@@ -1,0 +1,40 @@
+---
+title: "exercises"
+output: html_document
+---
+# 1
+No, the events could be mutually exclusive (e.g. event two will only happen if event one occurs)
+
+# 2
+No, we cannot have negative values, everything must be above zero.
+
+# 3 
+```{r}
+pbeta(0.75, 2, 1)
+```
+
+# 4 
+The point at which 97.5% of the observations are behind this point. This would mean that 97.5% of the time our observation will be less than or equal to the point.
+
+# 5
+```{r}
+p_one_parent <- 0.15
+pfather <- 0.1
+pmother <- 0.09
+
+# What is the probability they both have contracted it?
+
+# We know that the probability of A or B is:
+# P(A or B) = P(A) + P(B) - P(A & B)
+# 0.15 = 0.1 + 0.09 - x
+
+# solve for x
+0.1 + 0.09 - 0.15
+
+```
+
+# 6
+The median should be 0.50
+
+# 7 
+Yes, b/c it is symetric, the easy explanation is that 50% of the data would lie above 0 and 50% would lie below.
