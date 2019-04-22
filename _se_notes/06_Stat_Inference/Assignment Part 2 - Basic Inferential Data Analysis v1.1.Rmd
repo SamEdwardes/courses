@@ -1,0 +1,118 @@
+---
+title: 'Basic Inferential Data Analysis'
+author: "Sam Edwardes; April 5, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+### Overview
+The purpose of this document is to analyze tooth growth data in the R datasets package. From the R Documentation (?ToothGrowth):
+
+*The response is the length of odontoblasts (cells responsible for tooth growth) in 60 guinea pigs. Each animal received one of three dose levels of vitamin C (0.5, 1, and 2 mg/day) by one of two delivery methods, orange juice or ascorbic acid (a form of vitamin C and coded as VC).*
+
+*The dataframe has 60 observations on 3 variables:*
+
+- *[,1]	 len	 numeric	 Tooth length*
+- *[,2]	 supp	 factor	 Supplement type (VC or OJ)*
+- *[,3]	 dose	 numeric	 Dose in milligrams/day*
+
+### Load data
+```{r message=FALSE}
+# load required libraries
+library(ggplot2); library(dplyr); library(Hmisc)
+# load ToothGrowth data into a dataframe
+tg <- datasets::ToothGrowth
+```
+
+### Basic data summary
+First, lets explore what the data looks like, and run some basic summary statistics using **describe()** from the **Hmisc** package (see appendix 1).
+
+From analyzing each column, there are several insights gleaned:
+
+- [len] column has the most variability, with values range from 4.2 up to 33.9
+- [supp] column has only two variables, OJ and VC
+- [does] column has three potential values, either 0.5, 1, or 2
+
+It looks like we will want to compare tooth growth based on delivery method and/or dose.
+```{r}
+oj_mean <- filter(tg, supp == "OJ") %>% select(len) %>% summarise(mean(len))
+vc_mean <- filter(tg, supp == "VC") %>% select(len) %>% summarise(mean(len))
+one_half_mean <- filter(tg, dose == 0.5) %>% select(len) %>% summarise(mean(len))
+one_mean <- filter(tg, dose == 1.0) %>% select(len) %>% summarise(mean(len))
+two_mean <- filter(tg, dose == 2.0) %>% select(len) %>% summarise(mean(len))
+
+# by delivery method
+c(pull(oj_mean), pull(vc_mean))
+# by dose
+c(pull(one_half_mean), pull(one_mean), pull(two_mean))
+```
+When comparing tooth growth by delivery method, its clear orange juice results in more tooth growth. When comparing by dose, its clear that the higher dose results in the highest growth. Since we have multiple variables, it will be useful to plot and compare these by creating six groups (OJ: low, medium, and high dose; and VC: low, medium, and high dose).
+```{r fig.height=3, fig.width=5}
+# Plot the results by the six groups
+g3 <- ggplot(tg, aes(y = len, x = as.character(dose))) + geom_boxplot(outlier.shape = NA, width = 0.3) + stat_summary(aes(ymax = ..y.., ymin = ..y..),fun.y = mean, color='blue', geom="errorbar", linetype = "dashed") + geom_point(alpha = 0.2, size = 3) + labs(title = "Tooth growth comparing dose and delivery methods", x = "dose") + facet_grid(.~supp); g3
+```
+
+As the chart above demonstrates (note the dotted blue line represents the mean, see *Appendix 2* for more details):
+
+- it looks like at the highest dose, both delivery methods result in similar results
+- at lower doses (0.5 and 1.0), orange juice delivers superior results.
+
+### Confidence intervals
+Now lets confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose to see if our initial observations are valid.
+
+First, we will compare the delivery methods of orange juice vs. absorbic acid. The mean tooth growth for samples who received orange juice is `r pull(oj_mean)`. The mean tooth growth for samples who received absorbic acid is `r pull(vc_mean)`. The delta between these two means is `r pull(oj_mean) - pull(vc_mean)`.
+
+```{r}
+t_test_result <- t.test(len ~ supp, paired = FALSE, var.equal = FALSE, data = tg)
+t_test_result$conf.int
+```
+
+As the results demonstrate, the 95% confidence interval contains 0. This means that although our samples showed orange juice resulted in more growth, it would not be unusual for use to see a delta of 0, or Orange Juice not resulting in more growth. So maybe Orange juice is not as powerful as we thought?
+
+Lets try comparing now a high dose vs. a low dose, ignoring the delivery method. The mean tooth growth for a high dose is `r pull(two_mean)`. The mean tooth growth for a low dose is `r pull(one_half_mean)`. The delta between these two means is `r pull(two_mean) - pull(one_half_mean)`.
+```{r}
+t_test_result <- t.test(len ~ dose, paired = FALSE, var.equal = FALSE, data = tg[tg$dose == 0.5 | tg$dose ==2,])
+t_test_result$conf.int
+```
+
+This time, 0 does not fall in the 95% confidence interval. With this knowledge, we can say that it is very unlikely that a dose of 2 is less effective than a dose of 0.5.
+
+### Conclusions
+Our analysis showed that:
+
+- The orange juice method delivered higher growth than absorbic acid, however the difference was not statistically significant.
+- The higher the dose, the higher the observed tooth growth. When comparing a dose of 0.5 vs 2.0, the difference was statistically significant
+
+From this analysis, we can conclude that under either delivery method, a dose of 2.0 will with a high degree of confidence result in tooth growth.
+
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+
+# Appendix
+### Appendix 1
+```{r}
+describe(tg)
+```
+
+### Appendix 2
+```{r}
+# Show the mean for each group
+tg %>%
+    group_by(supp, dose) %>%
+    summarise(mean = mean(len))
+```
+

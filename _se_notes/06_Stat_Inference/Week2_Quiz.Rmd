@@ -1,0 +1,82 @@
+---
+title: "Quiz 2"
+author: "Sam Edwardes"
+date: "March 24, 2019"
+output: html_document
+---
+
+#1
+What is the variance of the distribution of the average an IID draw of nnn observations from a population with mean mu\muμ and variance sigma, start superscript, 2, end superscript\sigma^2σ
+
+#2
+Suppose that diastolic blood pressures (DBPs) for men aged 35-44 are normally distributed with a mean of 80 (mm Hg) and a standard deviation of 10. About what is the probability that a random 35-44 year old has a DBP less than 70?
+```{r}
+mu <- 80
+sigma <- 10
+q <- 70
+
+pnorm(q, mean = mu, sd = sigma, lower.tail = TRUE)
+```
+
+#3
+Brain volume for adult women is normally distributed with a mean of about 1,100 cc for women with a standard deviation of 75 cc. What brain volume represents the 95th percentile?
+```{r}
+mu <- 1100
+sigma <- 75
+p <- 0.95
+
+qnorm(p, mu, sigma)
+```
+#4
+Refer to the previous question. Brain volume for adult women is about 1,100 cc for women with a standard deviation of 75 cc. Consider the sample mean of 100 random adult women from this population. What is the 95th percentile of the distribution of that sample mean?
+```{r}
+1100 + c(-1,1) *qnorm(0.95) * 75/sqrt(100)
+```
+
+#5
+You flip a fair coin 5 times, about what's the probability of getting 4 or 5 heads?
+```{r}
+# probablyility of 4 heads
+n <- 5
+p <- 0.5
+
+ways_to_win <- choose(5,4)
+outcomes <- 2^5
+heads_4 <- ways_to_win / outcomes
+heads_4
+
+# probability of 5 heads
+ways_to_win <- 1
+heads_5 <- ways_to_win / outcomes
+heads_5
+
+# probabilyt of 4 or 5 heads
+heads_4 + heads_5
+```
+#6
+The respiratory disturbance index (RDI), a measure of sleep disturbance, for a specific population has a mean of 15 (sleep events per hour) and a standard deviation of 10. They are not normally distributed. Give your best estimate of the probability that a sample mean RDI of 100 people is between 14 and 16 events per hour?
+```{r}
+pnorm(16, mean = 15, sd = 1) - pnorm(14, mean = 15, sd = 1)
+```
+#7
+Consider a standard uniform density. The mean for this density is .5 and the variance is 1 / 12. You sample 1,000 observations from this distribution and take the sample mean, what value would you expect it to be near?
+```{r}
+mu <- 0.5
+var <- 1/12
+sigma <- (1/12)^2
+n <- 1000
+
+```
+#8
+The number of people showing up at a bus stop is assumed to be
+
+Poisson with a mean of 5 5 5 people per hour. You watch the bus
+
+stop for 3 hours. About what's the probability of viewing 10 or fewer people?
+```{r}
+mu <- 5
+t <- 3
+
+ppois(10, mu*t )
+```
+

@@ -1,0 +1,86 @@
+---
+title: 'Assignment Part 2: Basic Inferential Data Analysis'
+author: "Sam Edwardes"
+date: "April 5, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+### Overview
+The purpose of this document is to analyze tooth growth data in the R datasets package. From the R Documentation (?ToothGrowth):
+
+*The response is the length of odontoblasts (cells responsible for tooth growth) in 60 guinea pigs. Each animal received one of three dose levels of vitamin C (0.5, 1, and 2 mg/day) by one of two delivery methods, orange juice or ascorbic acid (a form of vitamin C and coded as VC).*
+
+*The dataframe has 60 observations on 3 variables:*
+
+- *[,1]	 len	 numeric	 Tooth length*
+- *[,2]	 supp	 factor	 Supplement type (VC or OJ)*
+- *[,3]	 dose	 numeric	 Dose in milligrams/day*
+
+### Load data
+```{r message=FALSE}
+# load required libraries
+library(ggplot2)
+library(dplyr)
+library(Hmisc)
+
+# load ToothGrowth data into a dataframe
+tg <- datasets::ToothGrowth
+```
+
+### Exploratory Analysis
+First, lets explore what the data looks like, and run some basic summary statistics.
+```{r}
+describe(tg)
+```
+
+From analyzing each column, there are several insights gleaned:
+
+- [len] column has the most variability, with values range from 4.2 up to 33.9
+- [supp] column has only two variables, OJ and VC
+- [does] column has three potential values, either 0.5, 1, or 2
+
+It looks like we will want to compare tooth growth based on delivery method and/or dose. Lets first compare tooth growth by delivery method.
+```{r}
+g1 <- ggplot(tg, aes(y = len, x = supp)) +
+    geom_boxplot(outlier.shape = NA, width = 0.3) +
+    stat_summary(aes(ymax = ..y.., ymin = ..y..),fun.y = mean, color='blue', geom="errorbar", linetype = "dashed") + 
+    geom_point(alpha = 0.2, size = 3) +
+    labs(title = "Tooth growth comparing delivery methods")
+
+g1
+```
+
+From the plot above, it looks like orange juice (OJ) results in higher tooth growth. Lets compare tooth growth by dose.
+```{r}
+g2 <- ggplot(tg, aes(y = len, x = as.character(dose))) +
+    geom_boxplot(outlier.shape = NA, width = 0.3) +
+    stat_summary(aes(ymax = ..y.., ymin = ..y..),fun.y = mean, color='blue', geom="errorbar", linetype = "dashed") + 
+    geom_point(alpha = 0.2, size = 3) +
+    labs(title = "Tooth growth comparing delivery methods", x = "dose")
+
+g2
+```
+
+As you would expect, as the dose increases, so does tooth growth. Lets compare toothgrowth by dose and delivery method.
+```{r}
+g3 <- ggplot(tg, aes(y = len, x = as.character(dose))) +
+    geom_boxplot(outlier.shape = NA, width = 0.3) +
+    stat_summary(aes(ymax = ..y.., ymin = ..y..),fun.y = mean, color='blue', geom="errorbar", linetype = "dashed") + 
+    geom_point(alpha = 0.2, size = 3) +
+    labs(title = "Tooth growth comparing dose and delivery methods", x = "dose") +
+    facet_grid(.~supp)
+
+g3
+```
+
+As the chart above demonstrates:
+
+- it looks like at the highest dose, both delivery methods result in similar results
+- at lower doeses (0.5 and 1.0), orange juice delivers superior results.
+
+### Confidence internvals
+Now lets confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose to see if our initial observations are valid.
+
+### Conclusions
+...

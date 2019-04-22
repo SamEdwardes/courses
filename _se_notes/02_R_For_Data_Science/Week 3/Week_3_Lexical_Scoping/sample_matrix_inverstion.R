@@ -1,0 +1,6 @@
+sample_vector <- makeVector()
+sample_vector$set(c(1,2,3,4,5))
+sample_vector$get()
+sample_vector$setmean(mean(sample_vector$get()))
+sample_vector$getmean()
+cachemean(sample_vector)

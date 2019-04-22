@@ -1,0 +1,171 @@
+---
+title: "Week 4 Quiz"
+author: "Sam Edwardes"
+date: "April 5, 2019"
+output: html_document
+---
+
+# Q1
+A pharmaceutical company is interested in testing a potential blood pressure lowering medication. Their first examination considers only subjects that received the medication at baseline then two weeks later. The data are as follows (SBP in mmHg)
+
+```{r}
+# chart the data from test
+subject <- c(1,2,3,4,5)
+baseline <- c(140,138,150,148,135)
+week2 <- c(132,135,151,146,130)
+df <- data.frame(cbind(subject, baseline, week2))
+df$reduction <- df$baseline - df$week2
+df
+
+# find the p value
+pval <- t.test(x = df$baseline, 
+               y = df$week2, 
+               paired = TRUE, 
+               alternative = "two.sided")
+pval
+
+pval$p.value # 0.086
+```
+
+# 2
+A sample of 9 men yielded a sample average brain volume of 1,100cc and a standard deviation of 30cc. What is the complete set of values of u0 that a test of H0: u = u0 would fail to reject the null hypothesis in a two sided 5% students t-test?
+
+```{r}
+n <- 9
+mu <- 1100
+s <- 30
+alpha <- 0.05
+ts <- qt(1-alpha/2, n-1); ts #divide alpha by 2 for a two sided t test
+
+round(mu + c(-1,1) * ts * s / sqrt(n),0)
+```
+
+# 3
+Researchers conducted a blind taste test of Coke versus Pepsi. Each of four people was asked which of two blinded drinks given in random order that they preferred. The data was such that 3 of the 4 people chose Coke. Assuming that this sample is representative, report a P-value for a test of the hypothesis that Coke is preferred to Pepsi using a one sided exact test.
+
+```{r}
+n <- 4
+x <- 3
+
+binom.test(x = x,
+           n = n,
+           alternative = "greater")
+```
+
+# 4
+Infection rates at a hospital above 1 infection per 100 person days at risk are believed to be too high and are used as a benchmark. A hospital that had previously been above the benchmark recently had 10 infections over the last 1,787 person days at risk. About what is the one sided P-value for the relevant test of whether the hospital is *below* the standard?
+
+```{r}
+x <- 10
+T <- 1787
+r <- 1/100
+
+poisson.test(x = x,
+             T = T,
+             r = r,
+             alternative = "less")
+```
+
+# 5
+Suppose that 18 obese subjects were randomized, 9 each, to a new diet pill and a placebo. Subjects’ body mass indices (BMIs) were measured at a baseline and again after having received the treatment or placebo for four weeks. The average difference from follow-up to the baseline (followup - baseline) was −3 kg/m2 for the treated group and 1 kg/m2 for the placebo group. The corresponding standard deviations of the differences was 1.5 kg/m2 for the treatment group and 1.8 kg/m2 for the placebo group. Does the change in BMI appear to differ between the treated and placebo groups? Assuming normality of the underlying data and a common population variance, give a pvalue for a two sided t test.
+
+```{r}
+n <- 9
+u_treat <- -3
+u_control <- 1
+sd_treat <- 1.5
+sd_control <- 1.8
+
+# calculate pooled standard deviation
+sd_pooled <- (((n - 1) * sd_treat^2 + (n -1) * sd_control)/(n+n-2)); sd_pooled
+pval <- pt((u_treat - u_control) / (sd_pooled * (1/n+1/n)^0.5), df=n +n -2); pval
+
+# from online
+n_y <- 9 # subjects treated
+n_x <- 9 # subjects placebo
+s_y <- 1.5# kg/m2 std.dev. treated 
+s_x <- 1.8# kg/m2 std.dev. placebo 
+u_y <- -3#  kg/m2 average difference treated
+u_x <- 1#  kg/m2 average difference placebo
+
+# calculate pooled standard deviation
+s_p <- (((n_x - 1) * s_x^2 + (n_y - 1) * s_y^2)/(n_x + n_y - 2))
+pval <- pt((u_y - u_x) / (s_p * (1 / n_x + 1 / n_y)^.5), df=n_y + n_x -2)
+pval
+
+```
+
+
+# 6
+Brain volumes for 9 men yielded a 90% confidence interval of 1,077 cc to 1,123 cc. Would you reject in a two sided 5% hypothesis test of Ho: u = 1,078?
+
+```{r}
+# NO, because the result lies within the confidence internval
+```
+
+#7
+Researchers would like to conduct a study of 100 healthy adults to detect a four year mean brain volume loss of .01 mm3. Assume that the standard deviation of four year volume loss in this population is .04 mm3. About what would be the power of the study for a 5% one sided test versus a null hypothesis of no volume loss?
+```{r}
+u <- 0.01
+s <- 0.04
+n <- 100
+p <- 0.05
+
+# one sided 5% test
+pow <- power.t.test(delta = u, sd = s, n = n, sig.level = p, type = "one.sample", alternative = "one.side")
+pow # power = 0.798
+```
+
+
+# 8
+Researchers would like to conduct a study of n healthy adults to detect a four year mean brain volume loss of .01 mm3 Assume that the standard deviation of four year volume loss in this population is .04 mm^3. About what would be the value of n needed for 90% power of type one error rate of 5% one sided test versus a null hypothesis of no volume loss?
+ 
+```{r}
+ha <- 0.01
+h0 <- 0
+s <- 0.04
+n <- "?"
+pow <- 0.9
+p <- 0.05
+
+# one sided 5% test
+n <- power.t.test(delta = ha, sd = s, sig.level = p, power = pow, type = "one.sample", alternative = "one.side")
+n
+
+n$n #138.3856
+
+```
+
+
+# 9
+As you increase the type one error rate, \alpha α, what happens to power?
+
+```{r, echo = TRUE, eval=FALSE}
+# As you increase the type one error rate, the power becomes larger 
+# Think back to lecture 11.02 where they use the code to manipulate the chart.
+
+## Graphical Depiction of Power
+library(manipulate)
+library(ggplot2)
+mu0 = 30
+myplot <- function(sigma, mua, n, alpha){
+    g = ggplot(data.frame(mu = c(27, 36)), aes(x = mu))
+    g = g + stat_function(fun=dnorm, geom = "line", 
+                          args = list(mean = mu0, sd = sigma / sqrt(n)), 
+                          size = 2, col = "red")
+    g = g + stat_function(fun=dnorm, geom = "line", 
+                          args = list(mean = mua, sd = sigma / sqrt(n)), 
+                          size = 2, col = "blue")
+    xitc = mu0 + qnorm(1 - alpha) * sigma / sqrt(n)
+    g = g + geom_vline(xintercept=xitc, size = 3)
+    g
+}
+manipulate(
+    myplot(sigma, mua, n, alpha),
+    sigma = slider(1, 10, step = 1, initial = 4),
+    mua = slider(30, 35, step = 1, initial = 32),
+    n = slider(1, 50, step = 1, initial = 16),
+    alpha = slider(0.01, 0.1, step = 0.01, initial = 0.05)
+    )
+```
+

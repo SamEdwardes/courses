@@ -1,0 +1,192 @@
+---
+title: "Weather Event Impacts on Public Health & The Economy"
+author: "Sam Edwardes"
+date: "February 18, 2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Synopsis
+The purpose of this document is to address the following questions:
+
+1. Across the United States, which types of weather events are most harmful with respect to population health?
+2. Across the United States, which types of weather events have the greatest economic consequences?
+
+Based on the analysis, it has been determined that Tornados have the biggest impact on population health, and floods have the biggest economic impact.
+
+
+## Data Processing
+
+### Load the data
+The data can be downloaded from the URL below and then loaded into R. 
+
+[Weather data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+```{r message=FALSE}
+library(data.table)
+library(dplyr)
+library(tidyr)
+library(R.utils)
+library(ggplot2)
+library(gridExtra)
+```
+```{r cache=TRUE}
+# Data can be downloaded from the following URL
+
+url1 <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+file_name1 <- "repdata_data_StormData.csv.bz2"
+file_name2 <- "repdata_data_StormData.csv"
+
+
+# Download and unzip the file
+
+if(!dir.exists(file_name1)){download.file(url = url1, destfile = file_name1)}
+if(!dir.exists(file_name2)){bunzip2(file_name1, "repdata_data_StormData.csv", remove = FALSE, skip = TRUE)}
+
+
+# Load the data
+
+df <- fread(file_name2)
+```
+### Review the data
+```{r}
+# Examine the data in EVTYPE and the resulting health outcomes
+
+df %>%
+    group_by(EVTYPE) %>%
+    summarise(
+        NUM_RECORDS = n(),
+        FATALITIES = sum(FATALITIES),
+        INJURIES = sum(INJURIES),
+        PROPDMG = sum(PROPDMG),
+        CROPDMG = sum(CROPDMG)
+    )
+```
+
+
+### Clean and subset the data
+Clean the data.
+```{r}
+# Select required columns only, remove columns with no data
+
+df_clean <- df %>%
+    select(EVTYPE, FATALITIES, INJURIES, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %>%
+    filter(FATALITIES > 0 | INJURIES > 0 | PROPDMG > 0 | CROPDMG > 0) %>%
+    mutate(
+        PROPDMGEXP = toupper(PROPDMGEXP),
+        CROPDMGEXP = toupper(CROPDMGEXP),
+        PROPDMG_CLEAN = case_when(
+            PROPDMGEXP == 2 ~ PROPDMG * 10,
+            PROPDMGEXP == 3 ~ PROPDMG * 100,
+            PROPDMGEXP == 4 ~ PROPDMG * 1000,
+            PROPDMGEXP == 5 ~ PROPDMG * 10000,
+            PROPDMGEXP == 6 ~ PROPDMG * 100000,
+            PROPDMGEXP == 7 ~ PROPDMG * 1000000,
+            PROPDMGEXP == 8 ~ PROPDMG * 10000000,
+            PROPDMGEXP == 9 ~ PROPDMG * 100000000,
+            PROPDMGEXP == "H" ~ PROPDMG * 10,
+            PROPDMGEXP == "K" ~ PROPDMG * 100,
+            PROPDMGEXP == "M" ~ PROPDMG * 100000,
+            PROPDMGEXP == "B" ~ PROPDMG * 1000000000,
+            TRUE ~ PROPDMG
+        ),
+        CROPDMG_CLEAN = case_when(
+            CROPDMGEXP == "K" ~ CROPDMG * 100,
+            CROPDMGEXP == "M" ~ CROPDMG * 100000,
+            CROPDMGEXP == "B" ~ CROPDMG * 1000000000,
+            TRUE ~ CROPDMG
+        )
+    )
+```
+## Results
+***Q1: Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?***
+
+The data contains two health outcomes:
+
+1. Fatalities
+2. Injuries
+
+While both are bad, in order to understand what is most harmful to population health, we can assign a weighting to each. This analysis will assume that a fatality is twice as bad as an injury. This logic will be used to create a field `HEALTH SCORE`. The higher the score, the worse the impact is on population health.
+```{r}
+# Create the HEALTH_SCORE field
+
+df_clean <- df_clean %>% mutate(HEALTH_SCORE = INJURIES + FATALITIES*2 )
+
+
+# Examine the data in EVTYPE and the resulting health outcomes
+
+df_clean_health <- df_clean %>%
+    group_by(EVTYPE) %>%
+    summarise(
+        NUM_RECORDS = n(),
+        FATALITIES = sum(FATALITIES),
+        INJURIES = sum(INJURIES),
+        HEALTH_SCORE = sum(HEALTH_SCORE)) %>%
+    mutate(HEALTH_SCORE_PERCENT = (HEALTH_SCORE/sum(df_clean$HEALTH_SCORE))) %>%
+    arrange(desc(HEALTH_SCORE)) %>%
+    mutate(HEALTH_SCORE_PERCENT_CUM = cumsum(HEALTH_SCORE_PERCENT))
+
+head(df_clean_health,20)
+
+
+# Plot the results
+
+df_clean_health_plot <- head(df_clean_health,10) %>%
+    select(EVTYPE, FATALITIES, INJURIES, TOTAL_HEALTH_SCORE = HEALTH_SCORE) %>%
+    gather(key = "key", value = "Value", -EVTYPE)
+
+health_plot <- ggplot(df_clean_health_plot, aes(x=reorder(EVTYPE, -Value), y=Value)) +
+    geom_bar(stat = "identity", aes(fill=key), position="dodge") + 
+    theme(axis.text.x = element_text(angle=45, hjust=1)) + 
+    labs(title="Top 10 US Weather Events by Health Score") +
+    xlab("Weather Event")
+
+health_plot
+```
+
+As the table shows us, Tornados are by far the biggest risk to public health, responsible for over 60% of the damage to population health. Additionally, the top 10 events make up more than 87% of all health impact.
+
+**Q2: Across the United States, which types of events have the greatest economic consequences?**
+```{r}
+# Examine the data in EVTYPE and the resulting economic outcomes
+
+df_clean_econ <- df_clean %>%
+    group_by(EVTYPE) %>%
+    mutate(TOTALDMG = PROPDMG_CLEAN + CROPDMG_CLEAN) %>%
+    summarise(
+        NUM_RECORDS = n(),
+        PROPDMG_CLEAN = sum(PROPDMG_CLEAN),
+        CROPDMG_CLEAN = sum(CROPDMG_CLEAN),
+        TOTALDMG = sum(TOTALDMG)) %>%
+    mutate(TOTALDMG_PERCENT = (TOTALDMG/(sum(df_clean$PROPDMG_CLEAN)+sum(df_clean$CROPDMG_CLEAN)))) %>%
+    arrange(desc(TOTALDMG)) %>%
+    mutate(TOTALDMG_CUM = cumsum(TOTALDMG_PERCENT))
+
+head(df_clean_econ,20)
+
+
+# Plot the results
+
+df_clean_econ_plot <- head(df_clean_econ,10) %>%
+    select(EVTYPE, PROPDMG_CLEAN, CROPDMG_CLEAN, TOTALDMG) %>%
+    gather(key = "key", value = "Value", -EVTYPE)
+
+econ_plot <- ggplot(df_clean_econ_plot, aes(x=reorder(EVTYPE, -Value), y=Value)) +
+    geom_bar(stat = "identity", aes(fill=key), position="dodge") + 
+    theme(axis.text.x = element_text(angle=45, hjust=1)) + 
+    labs(title="Top 10 US Weather Events by Economic Impact") +
+    xlab("Weather Event")
+
+econ_plot
+```
+
+Floods have by far the greatest economic impact, accounting for more than 40% of damage. The top 10 events account for more than 91% of all economic damage.
+
+### Conclusion
+Based on the analysis, it has been determined that Tornados have the biggest impact on population health, and floods have the biggest economic impact.
+```{r fig.width=14}
+grid.arrange(health_plot, econ_plot, ncol = 2)
+```
