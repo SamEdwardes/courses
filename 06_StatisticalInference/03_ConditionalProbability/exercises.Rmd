@@ -1,0 +1,42 @@
+---
+title: "excercises"
+output: html_document
+---
+
+# 1
+1/13 assuming 13 cards of each suit
+
+# 2
+p / (1-p)
+
+# 3
+```{r}
+1/6*1/6
+1/36
+```
+
+# 4
+If we assume that 90% of those who get revisions get accpted, than we need to ensure in our model that the amount of revisions given does not increase acceptance so much that it exceeds 0.12. For example:
+```{r}
+num_apps <- 100
+num_revs <- 100*0.2; num_revs
+revs_accepted <- num_revs * 0.90; revs_accepted
+```
+In the example of above, 18 revisions are accepted. This does not seem possible, since the probability of being accepted is only 0.12 (so 12 should get accepted). Therefore, the probability of getting a revision must be less than 0.20.
+
+# 5
+P(A) = 0.05 probability of abestos
+P(+|A) = 0.93 (sensitivity)
+P(-|~A)= 0.88 (specificity)
+P(~A|-) = ? probability of not having abestos given a negative test result
+
+We can use Bayes theorem to solve for P(~A|-)
+
+P(~A|-) = P(-|~A) P(~A) / (P(-|~A) P(~A) + P(-|A)*P(A)
+```{r}
+numer <- 0.88 * (1-0.05)
+denom <- (1-0.93)*(0.05)
+
+numer / (numer + denom)
+```
+
