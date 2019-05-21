@@ -1,0 +1,65 @@
+---
+title: "Quiz Week 1"
+output: html_document
+---
+
+# 1
+```{r}
+p_one <- 0.17
+p_father <- 0.12
+p_both <- 0.06
+
+# what is p_mother?
+
+#P(A or B) = P(A) + P(B) + P(A & B)
+
+0.17 - 0.12 + 0.06
+
+# answer = 0.11
+```
+
+# 2
+0.75
+
+# 3
+x = heads I loose and give x dollars
+y = tails I win and get y dollars
+p = probability coin is heads
+
+What has to be true about x and y to make sure that the game is fair (expected earnings of 0)?
+
+```{r}
+# In this case, we need the odds to be 1:1.
+# odds = P(A)/P(B) or (1-P)/P or favourable outcomes over non favourable
+
+# p(1-p) = Y/X
+
+```
+# 4
+The median must be zero.
+
+
+# 5
+```{r}
+x <- 1:4
+p <- x/sum(x)
+temp <- rbind(x, p)
+rownames(temp) <- c("X", "Prob")
+temp
+
+# What is the mean?
+apply(temp, 2, prod)
+mean(apply(temp, 2, prod))
+
+# I think this is right...
+sum(apply(temp, 2, prod))
+
+```
+
+# 6
+```{r}
+numer <- 0.75*0.3
+denom <- numer + (1-0.52) * (1-0.3)
+numer/denom
+```
+

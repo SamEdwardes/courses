@@ -1,0 +1,23 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# 1
+the population variance
+
+# 2
+the population variance
+
+# 3
+it would be sigma^2
+
+# 4
+No, we can multiply our estimate of the population variance by 1/n
+
+# 5
+```{r}
+0.8*(1-0.8)
+0.2*(1-0.2)
+```
+

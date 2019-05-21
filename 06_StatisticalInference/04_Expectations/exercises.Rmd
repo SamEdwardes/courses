@@ -1,0 +1,32 @@
+# 1
+```{r}
+p <- 1/6
+1*p + 2*p + 3*p + 4*p + 5*p + 6*p
+```
+
+# 2
+The mean is at 0.
+
+# 3
+The averge of the 20 distributions would also approximate u.
+
+# 4
+- heads = I win. 
+- tails = friend wins.
+- If I win, i get x dollars, if they win they get y dollars.
+- odds that the coin is heads = d
+
+What is your expected earnings?
+
+expected earnings = -xp + y(1-p)
+
+d = P/(1-P) so...
+
+P = d/(1-d) so...
+
+
+expected earnings =  x(d/(1-d)) + y(1-(d/(1-d)))
+
+# 5
+It would be centered at 3.5.
+
