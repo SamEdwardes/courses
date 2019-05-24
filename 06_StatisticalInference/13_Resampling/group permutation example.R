@@ -27,9 +27,10 @@ permutations <- sapply(1:1000, function(i) testStat(y, sample(group)))
 # or the H0: x_bar - ybar = 0)
 dim(permutations)
 head(permutations)
-hist(permutations)
+hist(permutations, xlim = range(-20:20))
+abline(v = observedStat)
 
-# Our observed stat
+li# Our observed stat
 observedStat
 
 # what proportion of times was our simulated stat greater than our observed stat?
