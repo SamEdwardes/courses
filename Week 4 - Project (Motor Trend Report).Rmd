@@ -1,0 +1,19 @@
+---
+title: "Motor Trend - Miles Per Gallon Review"
+author: "Sam Edwardes"
+date: '2019-06-09'
+output: html_document
+---
+
+Miles per gallon (MPG) is an important metric for any person considering to buy a car. Motor trend magazine has collected data from a series of cars to understand how different car attirbutes affect MPG. Specifically, we are interestd in understanding:
+
+1. Is an automatic or manual transmission better for MPG?
+2. How much difference is there between automatic and manual transmission for MPG consumption?
+
+### Automatic vs. Manual Transmission
+
+```{r echo=FALSE}
+data(mtcars)
+mtcars
+```
+

@@ -1,0 +1,27 @@
+---
+title: "Lm less 1 example"
+output: html_document
+---
+
+### Example #1
+```{r}
+library(ggplot2)
+
+# generate random data
+set.seed(99)
+x <- abs(rnorm(1000))
+y <- abs(rnorm(1000))
+
+# compare the two methods
+lm(y ~ x)
+lm(y ~ x - 1) # through the origin
+
+g <- ggplot(data = data.frame(x,y), aes(x, y))
+g <- g + geom_point(alpha = 0.5)
+# add lm line
+g <- g + geom_smooth(method = "lm", formula = y ~ x, col = 'red', se = FALSE, alpha = 0.5)
+# add in lm line removing intercept
+g <- g + geom_smooth(method = "lm", formula = y ~ x - 1, col = 'blue', se = FALSE, alpha = 0.5)
+g
+```
+

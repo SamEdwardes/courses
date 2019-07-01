@@ -1,0 +1,204 @@
+---
+title: "Week 4 Quiz"
+output: html_notebook
+---
+
+# Quesiton 1
+```{r}
+# instructions
+library(ElemStatLearn)
+data(vowel.train)
+data(vowel.test)
+
+# set y to factor
+vowel.test$y <- factor(vowel.test$y)
+vowel.train$y <- factor(vowel.train$y)
+
+# set the seed
+set.seed(33833)
+
+# fit the models
+library(caret)
+fit1 <- train(y ~ ., data = vowel.train, method = "rf")
+fit2 <- train(y ~ ., data = vowel.train, method = "gbm")
+
+# predict
+predict1 <- predict(fit1, newdata = vowel.test)
+conf_1 <- confusionMatrix(predict1, vowel.test$y)
+conf_1
+
+predict2 <- predict(fit2, newdata = vowel.test)
+conf_2 <- confusionMatrix(predict2, vowel.test$y)
+conf_2
+
+# accuracy
+conf_1$overall[[1]]
+conf_2$overall[[1]]
+
+# agreement accuracy
+agreeSub = vowel.test[predict1 == predict2,]
+pred_comb = predict(fit1, agreeSub)
+comb_accuracy = sum(pred_comb == agreeSub$y) / length(pred_comb)
+comb_accuracy
+
+
+```
+My answers:
+ 
+- RF accuracy = 0.5995
+- GBM accuracy = 0.5303
+- Agreement accuracy = 0.6426
+
+Selected answer:
+
+- RF accuracy = 0.6082
+- GBM accuracy = 0.5152
+- Agreement accuracy = 0.6361
+
+## Quesiton 1 alternate
+```{r}
+rm(list = ls())
+library(ElemStatLearn)
+data(vowel.train)
+data(vowel.test) 
+
+vowel.train$y = factor(vowel.train$y)
+vowel.test$y = factor(vowel.test$y)
+
+set.seed(33833)
+
+model_tree = train(y ~ ., data = vowel.train, method = 'rf')
+model_gbm = train(y ~ ., data = vowel.train, method = 'gbm')
+
+pred_tree = predict(model_tree, vowel.test)
+pred_gbm = predict(model_gbm, vowel.test)
+
+
+# Get the accuracy for the tree and the gbm
+tree_accuracy = sum(pred_tree == vowel.test$y) / length(pred_tree)
+gbm_accuracy = sum(pred_gbm == vowel.test$y) / length(pred_tree)
+
+# Get the last part of the answer
+agreeSub = vowel.test[pred_tree == pred_gbm,]
+pred_comb = predict(model_tree, agreeSub)
+comb_accuracy = sum(pred_comb == agreeSub$y) / length(pred_comb)
+```
+
+# Quesiton 2
+```{r}
+# instructions
+library(caret)
+library(gbm)
+set.seed(3433)
+library("AppliedPredictiveModeling")
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+# set seed
+set.seed(62433)
+
+# models
+fit_rf <- train(diagnosis ~ ., data = training, method = "rf")
+fit_gbm <- train(diagnosis ~ ., data = training, method = "gbm")
+fit_lda <- train(diagnosis ~ ., data = training, method = "lda")
+
+# predictions
+predict_rf <- predict(fit_rf, newdata = testing)
+predict_gbm <- predict(fit_gbm, newdata = testing)
+predict_lda <- predict(fit_lda, newdata = testing)
+
+# confusion matrix
+confMat_rf <- confusionMatrix(predict_rf, testing$diagnosis)
+confMat_gbm <- confusionMatrix(predict_gbm, testing$diagnosis)
+confMat_lda <- confusionMatrix(predict_lda, testing$diagnosis)
+
+# see accuracy
+confMat_rf$overall[[1]]
+confMat_gbm$overall[[1]]
+confMat_lda$overall[[1]]
+
+# stack the models and then use "rf"
+stack_df <- data.frame(rf = predict(fit_rf, training), 
+                       gbm = predict(fit_gbm, training), 
+                       lda = predict(fit_lda, training), 
+                       diagnosis = training$diagnosis)
+
+fit_stack <- train(diagnosis ~ ., data = stack_df, method = "rf")
+predict_stack <- predict(fit_stack, newdata = testing)
+confMat_stack <- confusionMatrix(predict_stack, testing$diagnosis)
+
+# compare results
+confMat_rf$overall[[1]]
+confMat_gbm$overall[[1]]
+confMat_lda$overall[[1]]
+confMat_stack$overall[[1]]
+```
+my answer:
+
+- Stacked Accuracy: 0.79 is better than random forests and lda and the same as boosting
+
+# Question 3
+```{r}
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]
+testing = concrete[-inTrain,]
+
+set.seed(233)
+fit <- train(CompressiveStrength ~ ., data = training, method = "lasso")
+fit
+
+elasticnet::plot.enet(fit$finalModel, xvar = "penalty", use.color = TRUE)
+```
+
+Answer = "cement"
+
+# Quesiton 4
+```{r}
+library(lubridate) # For year() function below
+dat = read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/gaData.csv")
+training = dat[year(dat$date) < 2012,]
+testing = dat[(year(dat$date)) > 2011,]
+tstrain = ts(training$visitsTumblr)
+
+library(forecast)
+fit <- forecast::bats(tstrain)
+plot(tstrain,xlab="time", ylab = "visits")
+
+fcast <- forecast(fit, h=nrow(testing))
+plot(fcast)
+
+fcast_lower95 = fcast$lower[,2]
+fcast_upper95 = fcast$upper[,2]
+table( (testing$visitsTumblr>fcast_lower95) & (testing$visitsTumblr<fcast_upper95) )
+226/(226+9)
+```
+
+Answer:
+
+- 0.96
+
+# Question 5
+```{r}
+rm(list = ls())
+
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]
+testing = concrete[-inTrain,]
+
+set.seed(325)
+
+library(e1071)
+fit <- svm(CompressiveStrength ~ ., data = training)
+predict_svm <- predict(fit, testing)
+accuracy(predict_svm, testing$CompressiveStrength)
+```
+

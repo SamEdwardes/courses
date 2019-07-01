@@ -1,0 +1,305 @@
+---
+title: "Week 2 - Exercises"
+output: html_document
+---
+
+# Statistical Linear Regression Models
+## Q #1
+```{r}
+library(UsingR)
+data(father.son)
+
+fit <- lm(sheight ~ fheight, data = father.son)
+summary(fit)$coef
+
+# p-value for slope coefficient = <2e-16
+# p-value is very small, therefore we reject the null hypothesis
+```
+
+## Q #2
+```{r}
+# the intercept is at 33 inches, this is not very helpful though, since no one is that small We will refit the model centering the data around the mean
+
+fit <- lm(sheight ~ I(fheight - mean(fheight)), data = father.son)
+summary(fit)
+```
+
+## Q #3
+```{r}
+fit <- lm(sheight ~ fheight, data = father.son)
+
+f <- data.frame(fheight = c(80))
+
+predict(fit, newdata = f)
+
+library(ggplot2)
+ggplot(data = father.son, aes(x = fheight, y = sheight)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", colour = "black")
+```
+
+## Q #4, 5, 6, 7
+```{r}
+data("mtcars")
+
+ggplot(data = mtcars, aes(hp, mpg)) +
+  geom_point() + 
+  geom_smooth(method  = "lm")
+
+fit <- lm(mpg ~ hp, data = mtcars)
+summary(fit)$coef
+
+fit2 <- lm(mpg ~ I(hp - mean(hp)), data = mtcars)
+summary(fit2)$coef
+
+predict(fit, newdata = data.frame(hp = 111))
+
+```
+
+# Residuals
+## Q #1
+```{r}
+library(UsingR)
+library(ggplot2)
+data(father.son)
+
+fit <- lm(sheight ~ fheight, data = father.son)
+fit
+
+df <- data.frame(x = father.son$fheight, y = fit$residuals)
+
+g <- ggplot(data = df,
+            aes(x = x, y = y)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, col = 'red')
+g
+```
+
+## Q #2
+```{r}
+sh <- father.son$sheight
+fh <- father.son$fheight
+
+ress <- sh - predict(fit)
+variance <- sum(ress^2)/(length(ress)-2)
+
+# compare
+variance
+sum(resid(fit)^2)/length(resid(fit)-2)
+summary(fit)$sigma^2
+```
+
+## Q #3
+```{r}
+summary(fit)$r.squared
+
+reg_var <- sum((predict(fit) - mean(sh))^2)
+tot_var <- sum((sh - mean(sh))^2)
+
+reg_var/tot_var
+```
+
+## Q #4
+```{r}
+data(mtcars)
+mpg <- mtcars$mpg
+hp <- mtcars$hp
+
+fit <- lm(mpg ~ hp)
+summary(fit)
+
+ggplot(data = data.frame(x = hp, y = fit$residuals),
+       aes(x, y)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, col = 'red')
+```
+
+## Q #5
+```{r}
+resid <- mpg - predict(fit)
+resid_var <- sum(resid^2)/(length(mpg)-2)
+
+# compare
+resid_var
+summary(fit)$sigma^2
+```
+
+## Q #6
+```{r}
+reg_var <- sum((predict(fit) - mean(mpg))^2)
+tot_var <- sum((mpg - mean(mpg))^2)
+
+reg_var/tot_var
+summary(fit)$r.squared
+```
+
+# Regression Inference
+## Q #1
+Test whether the slope coefficient for the father.son data is different from zero (father as predictor, son as outcome).
+```{r}
+library(UsingR)
+data(father.son)
+x <- father.son$fheight
+y <- father.son$sheight
+n <- length(father.son)
+
+# option 1, using lm()
+fit <- lm(y ~ x)
+summary(fit) # the slope is not zero, the null hypothesis is rejected b/c we have a very small p-value
+```
+## Q #2
+Refer to question 1. Form a confidence interval for the slope coefficient.
+```{r}
+summary(fit)$coef[2,1] + c(-1,1) * qt(.975, df = fit$df) * summary(fit)$coef[2,2]
+# or...
+confint(fit)
+```
+
+## Q #3
+Refer to question 1. Form a confidence interval for the intercept (center the fathers’ heights first to get an intercept that is easier to interpret). 
+```{r}
+# centre the fathers height
+x_centred <- x - mean(x)
+fit <- lm(y ~ x_centred)
+
+# confidene interval
+summary(fit)$coef[1,1] + c(-1,1) * qt(.975, df = fit$df) * summary(fit)$coef[1,2]
+# or...
+confint(fit)
+```
+
+## Q #4
+Refer to question 1. Form a mean value interval for the expected son’s height at the average father’s height. 
+```{r}
+fit <- lm(y ~ x)
+new_df <- data.frame(x = mean(x));
+predict(fit, newdata = new_df, interval = "confidence")
+```
+
+## Q #5
+Refertoquestion1.Form a prediction interval for the son’s height at the average father’s height
+```{r}
+predict(fit, newdata = new_df, interval = "prediction")
+```
+
+## Q #6
+Load the mtcars dataset. Fit a linear regression with miles per gallon as the outcome and horsepower as the predictor. Test whether or not the horsepower power coefficient is statistically different from zero. Interpret your test.
+```{r}
+data(mtcars)
+x <- mtcars$hp
+y <- mtcars$mpg
+n <- length(mtcars)
+
+fit <- lm(y ~ x)
+summary(fit)
+
+# hp is coeffecient is stat different than zero b/c of very small p value
+```
+
+## Q #7
+```{r}
+summary(fit)$coef[2,1] + c(-1,1) * qt(.975, df = fit$df) * summary(fit)$coef[2,2]
+# or...
+confint(fit)
+```
+
+## Q #8
+## Q #9
+## Q #10
+## Q #11
+Refer to question 6. Create a plot that has the fitted regression line plus curves at the expected
+value and prediction intervals.
+```{r}
+library(ggplot2)
+
+newx <- data.frame(x = seq(min(x), max(x), length = 100))
+p1 <- data.frame(predict(fit, newdata = newx, interval = "confidence"))
+p2 <- data.frame(predict(fit, newdata = newx, interval = "prediction"))
+
+
+p1$interval <-  "confidence"
+p2$interval <-  "predction"
+p1$x <-  newx$x
+p2$x <- newx$x
+
+dat <- rbind(p1,p2)
+names(dat)[1] = "y"
+dat
+
+
+
+ggplot(data = dat, aes(x = x, y = y)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr, fill = interval), alpha = 0.2) +
+  geom_line() +
+  geom_point(data =  mtcars, aes(x = hp, y = mpg))
+```
+
+# Quiz
+## Q #1
+```{r}
+x <- c(0.61, 0.93, 0.83, 0.35, 0.54, 0.16, 0.91, 0.62, 0.62)
+y <- c(0.67, 0.84, 0.6, 0.18, 0.85, 0.47, 1.1, 0.65, 0.36)
+n <- length(y)
+
+fit <- lm(y ~ x)
+summary(fit)
+
+# 0.52
+```
+## Q #2
+```{r}
+summary(fit)$sigma
+sqrt(sum((fit$residuals^2))/(n-2))
+
+```
+
+## Q #3
+```{r}
+data(mtcars)
+fit <- lm(mpg ~ wt, data = mtcars)
+predict(fit, newdata = data.frame(wt = c(mean(mtcars$wt))), interval = "confidence" )
+
+# or
+fit2 <- lm(mpg ~ I(wt - mean(wt)), data = mtcars)
+confint(fit2)
+
+#18.991
+```
+
+## Q #4
+```{r}
+?mtcars
+```
+
+## Q #5
+```{r}
+predict(fit, newdata = data.frame(wt = c(3)), interval = "prediction")
+```
+
+## Q #6
+```{r}
+mtcars$short_ton <- mtcars$wt/2
+plot(mtcars$short_ton, mtcars$mpg)
+plot(mtcars$wt, mtcars$mpg)
+fit1 <- lm(mpg ~ wt, data = mtcars)
+summary(fit1)$coef
+fit2 <- lm(mpg ~ short_ton, data = mtcars)
+summary(fit2)$coef
+confint(fit2)
+```
+
+## Q #9
+```{r}
+# normal model
+fit1 <- lm(mpg ~ wt, data = mtcars)
+num1 <- sum(residuals(fit1)^2)
+
+# no intercept
+fit2 <- lm(mpg ~ wt - 1, data = mtcars)
+num2 <- sum(residuals(fit2)^2)
+
+c(num1, num2)
+num1/num2
+
+```
+

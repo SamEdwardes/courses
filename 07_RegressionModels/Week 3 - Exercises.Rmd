@@ -1,0 +1,283 @@
+---
+title: "Week 3"
+output: html_document
+---
+
+# Multivariable regression
+## Q #1
+```{r}
+data("Seatbelts")
+Seatbelts <- as.data.frame(Seatbelts)
+head(Seatbelts)
+
+fit <- lm(DriversKilled ~ kms + PetrolPrice, data = Seatbelts)
+round(summary(fit)$coef, 4)
+
+# for each km driven, 0.0017 less deaths are likely to occur
+# for each increase in petrol price, 643 less deaths are likely to occur
+# both predictors have a small p value, suggesting that there is a relationship
+# R squared of 0.18 suggests that only 18% of the variation is explained by the model, so this model is not very good at explaining the variation
+
+# a better way...
+# change kms to 1000, and centre both km and petrol price
+# this way the intercept will tell us the deaths at the average petrol price and kms driven
+
+library(dplyr)
+sb2 <- mutate(Seatbelts,
+              pp = (PetrolPrice - mean(PetrolPrice))/ sd(PetrolPrice),
+              mm = kms / 1000,
+              mmc = mm - mean(mm))
+
+head(sb2)
+
+fit2 <- lm(DriversKilled ~ mmc + pp, data = sb2)
+round(summary(fit2)$coef, 4)
+```
+
+## Q #2
+```{r}
+dk <- Seatbelts$DriversKilled
+pp <- Seatbelts$PetrolPrice
+kms <- Seatbelts$kms
+
+# centre the data
+pp_c <- pp - mean(pp)
+kms_c <- kms - mean(kms)
+
+fit <- lm(dk ~ pp_c + kms_c)
+
+round(summary(fit)$coef,4)
+
+# or predict the number of drivers
+fit2 <- lm(dk ~ pp + kms)
+predict(fit2, newdata = data.frame(pp = mean(pp), kms = mean(kms)))
+```
+
+## Q #3
+```{r}
+# take residual for dk and kms
+fit1 <- lm(dk ~ kms)
+resid1 <- residuals(fit1)
+head(resid1)
+
+fit2 <- lm(pp ~ kms)
+resid2 <- residuals(fit2)
+head(resid2)
+
+
+print("##################################")
+fit3 <- lm(resid1 ~ resid2 - 1)
+round(summary(fit3)$coef, 4)
+
+# compare too
+print("##################################")
+fit4 <- lm(dk ~ pp + kms)
+round(summary(fit4)$coef, 4)
+
+```
+
+## Q #4
+```{r}
+# take residual for dk and kms
+fit1 <- lm(dk ~ pp)
+resid1 <- residuals(fit1)
+head(resid1)
+
+fit2 <- lm(kms ~ pp)
+resid2 <- residuals(fit2)
+head(resid2)
+
+
+print("##################################")
+fit3 <- lm(resid1 ~ resid2 - 1)
+round(summary(fit3)$coef, 4)
+
+# compare too
+print("##################################")
+fit4 <- lm(dk ~ pp + kms)
+round(summary(fit4)$coef, 4)
+
+```
+
+
+# Multivar Examples and tips and tricks
+## Q #1
+```{r}
+data("Seatbelts")
+Seatbelts <- as.data.frame(Seatbelts)
+head(Seatbelts)
+
+fit <- lm(DriversKilled ~ kms + PetrolPrice, data = Seatbelts)
+round(summary(fit)$coef, 4)
+
+# for each km driven, 0.0017 less deaths are likely to occur
+# for each increase in petrol price, 643 less deaths are likely to occur
+# both predictors have a small p value, suggesting that there is a relationship
+# R squared of 0.18 suggests that only 18% of the variation is explained by the model, so this model is not very good at explaining the variation
+
+# a better way...
+# change kms to 1000, and centre both km and petrol price
+# this way the intercept will tell us the deaths at the average petrol price and kms driven
+
+library(dplyr)
+sb2 <- mutate(Seatbelts,
+              pp = (PetrolPrice - mean(PetrolPrice))/ sd(PetrolPrice),
+              mm = kms / 1000,
+              mmc = mm - mean(mm))
+
+head(sb2)
+
+fit2 <- lm(DriversKilled ~ mmc + pp, data = sb2)
+round(summary(fit2)$coef, 4)
+```
+## Q #2
+```{r}
+# get the data
+dk <- Seatbelts$DriversKilled
+kms <- Seatbelts$kms
+pp <- Seatbelts$PetrolPrice
+
+# normalize and clean the data
+dk_log <- log(dk) # log the deaths
+pp_c <- (pp - mean(pp))/sd(pp) # centre b/c pp 0 does not tell us anything and make units into SD
+kms_1000 <- kms/1000 # make the units more readable, by changing to 1000s of kms.
+kms_1000_c <- kms_1000 - mean(kms_1000) # also centre the kms
+
+fit <- lm(dk_log ~ pp_c + kms_1000_c)
+summary(fit)
+
+# ANSWER
+# the intercept is 4.78, meaning that at the average pp and kms driven 4.78 "logged" deaths will occur
+# for sd change in PP, 0.064 LESS "logged" deaths will occur
+# for each additional 1000 kms driven, 0.014 LESS logged deaths will occur
+
+cbind(exp(-0.064126), 1-exp(-0.064126))
+cbind(exp(-0.014008), 1-exp(-0.014008))
+
+# for every additional 1000s of kms driven, we are estimating an expected 1 % decrease in the geomtric mean of drivers killed holding petrol price constant.
+```
+
+## Q #3
+```{r}
+# part 1
+law <- Seatbelts$law
+
+fit <- lm(dk ~ pp_c + kms_1000_c + factor(law))
+summary(fit)$coef
+
+# ANSWER
+# if the law was in effect, than the intercept should be shifted down by 11.8 deaths (number of deaths is reduced)
+```
+
+## Q #4
+```{r}
+library(dplyr)
+pp_d <- case_when(pp >= quantile(pp, 0.75) ~ "level 4",
+                  pp >= quantile(pp, 0.50) ~ "level 3",
+                  pp >= quantile(pp, 0.25) ~ "level 2",
+                  TRUE ~ "level 1")
+
+fit <- lm(dk ~ pp_d + kms_1000_c)
+summary(fit)$coef
+
+```
+
+# Quiz
+## Q #1
+```{r}
+data(mtcars)
+fit <- lm(mpg ~ factor(cyl) + wt, data = mtcars)
+summary(fit)$coef
+
+# -6.071
+```
+## Q #2
+```{r}
+data(mtcars)
+
+# adjusted model (including the weight variable)
+fit1 <- lm(mpg ~ factor(cyl) + wt, data = mtcars)
+summary(fit1)$coef
+
+# unadjusted model (not including the weight variable)
+fit2 <- lm(mpg ~ factor(cyl), data = mtcars)
+summary(fit2)$coef
+
+# holding weight constant, cyl have more of an effect on mpg (WRONG)
+# Within a given weight, 8 cylinder vehicles have an expected 12 mpg drop in fuel efficiency. (WRONG)
+# Holding weight constant, cylinder appears to have less of an impact on mpg than if weight is disregarded.
+```
+
+## Q #3
+```{r}
+data(mtcars)
+
+# model 1
+fit1 <- lm(mpg ~ factor(cyl) + wt, data = mtcars)
+round(summary(fit1)$coef,4)
+
+# model 2: consider interaction between number of cyl as factor variable and weight
+fit2 <- lm(mpg ~ factor(cyl)*wt, data = mtcars)
+round(summary(fit2)$coef,4)
+
+# likelihood ratio test
+anova(fit1, fit2)
+
+# the p value is 0.1239. This is above 0.05, so the second model is not better
+# The P-value is larger than 0.05. So, according to our criterion, we would fail to reject, which suggests that the interaction terms may not be necessary.
+```
+
+## Q #4
+```{r}
+data(mtcars)
+fit <- lm(mpg ~ I(wt * 0.5) + factor(cyl), data = mtcars)
+summary(fit)$coef
+
+# The estimated expected change in MPG per half ton increase in weight for for a specific number of cylinders (4, 6, 8). (WRONG)
+# The estimated expected change in MPG per half ton increase in weight for the average number of cylinders. (WRONG)
+# The estimated expected change in MPG per half ton increase in weight.
+```
+
+## Q #5
+```{r}
+x <- c(0.586, 0.166, -0.042, -0.614, 11.72)
+y <- c(0.549, -0.026, -0.127, -0.751, 1.344)
+
+fit <- lm(y ~ x)
+summary(fit)$coef
+hatvalues(fit)
+
+# 0.9946
+```
+
+## Q #6
+```{r}
+x <- c(0.586, 0.166, -0.042, -0.614, 11.72)
+y <- c(0.549, -0.026, -0.127, -0.751, 1.344)
+
+fit <- lm(y ~ x)
+summary(fit)$coef
+
+hatvalues(fit)
+dfbetas(fit)
+
+# -134
+```
+
+## Q #7
+```{r}
+# It is possible for the coefficient to reverse sign after adjustment. For example, it can be strongly significant and positive before adjustment and strongly significant and negative after adjustment.
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

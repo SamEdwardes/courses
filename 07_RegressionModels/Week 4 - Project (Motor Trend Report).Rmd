@@ -1,0 +1,165 @@
+---
+title: "Motor Trend - MPG Comparison"
+output: html_document
+---
+```{r include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+
+# load the data
+data(mtcars)
+num_records <- nrow(mtcars)
+
+# add model details
+mtcars$model <- rownames(mtcars)
+
+# clean the data
+mtcars <- mtcars %>% mutate(transmission = case_when(
+  am == 0 ~ "automatic",
+  TRUE ~ "manual"
+))
+```
+### Executive Summary
+
+Miles per gallon (MPG) is an important metric for any person considering to buy a car. Motor trend magazine has collected data from a series of cars to understand how different car attirbutes affect MPG. Specifically, we are interestd in understanding:
+
+1. Is an automatic or manual transmission better for MPG?
+2. How much difference is there between automatic and manual transmission for MPG consumption?
+
+The analysis concluded that:
+- automatic cars have a lower MPG.
+- but this analysis is limited by confounding variables such as weight which could influence the results.
+
+### Exploring the data
+We collected `r num_records` observations to inform our study:
+
+```{r echo=FALSE, results='asis'}
+# print the data
+mtcars_summary <- mtcars %>%
+  group_by(transmission) %>%
+  summarise("Number of Observations" = n(), "Mean MPG" = round(mean(mpg),2))
+
+kable(mtcars_summary, caption = "Summary of observations")
+```
+
+To understand how transmission type effects MPG, we can compare the MPG observation between the two transmission types. From an initial comparison, it looks clear that automatic cars have a better (lower) MPG result than manual transmission cars.
+
+```{r echo=FALSE, fig.width=5, fig.height=3}
+# plot the data
+g <- ggplot(data = mtcars, aes(x=transmission, y=mpg, fill = transmission)) + 
+  geom_boxplot(width = 0.5) + 
+  geom_point(aes(), alpha = 0.5, size = 2) +
+  ggtitle("Automatic vs. Manual")
+g
+```
+
+To understand the signicance of the difference, we can test if the difference is statisically signicant. Using a t-test, we tested the hypothesis that there is no differene in MPG between an automatic and manual transmission car.
+
+```{r, echo=FALSE}
+automatic <- mtcars[mtcars$transmission == "automatic","mpg"]
+manual <- mtcars[mtcars$transmission == "manual","mpg"]
+t_test <- t.test(x=manual, y=automatic, alternative = "two.sided")
+```
+
+Our t-test returned the following results:
+
+- test statistic of `r round(t_test$statistic,4)`
+- p value of `r round(t_test$p.value,4)`
+- conficence interval of `r round(t_test$conf.int,4)`
+
+The high t-statistic shows that our observed data is many standard deviations away from the expected mean of 0. The small p-value shows that the probabily of observing our actual data is very unlikely if there really was no difference. Lastly our confidence internal does not contain 0, suggesting the actual difference in MPG between automatic and manual transmission cars is greater than 0.
+
+We can say with confidence 95% confidence that automatic cars are between `r round(t_test$conf.int,4)` MPG more effecient than manual cars.
+
+While this analysis was helpful, we must also consider the possibility that there are other factors besides transmission type that could be influencing the MPG results of a car. Our data includes additional variables such as weight, number of cylinders, and more (see appendix for complete data).
+
+To understand the influence these other variables have, we can fit a linear model to the data and observer the influence of each variable. We will compare several different models to understand how different variables influence a cars MPG result.
+
+### Model #1
+```{r echo=FALSE}
+fit1 <- lm(mpg ~ transmission, data = mtcars)
+```
+
+Our first model will consider only MPG and transmission type. Using this simple model, we predict that:
+
+- if a car is automatic it will have a MPG of `r round(mean(automatic),4)`
+- if a car is manual it will have a mean of `r round(mean(manual),4)`
+
+The model also shows us that:
+
+- a low p-value indicates that the the difference is statistically signifcant (as we also demonstrated above)
+- r-squared of `r round(summary(fit1)$r.squared,4)` means that there is still a lot of variance not yet exlpained by the model
+
+```{r echo=FALSE}
+kable(summary(fit1)$coef)
+```
+
+```{r echo=FALSE, fig.width=5, fig.height=3}
+residuals1 <- residuals(fit1)
+reisudals1_df <- data.frame(transmission = mtcars$transmission, residuals = residuals1)
+ggplot(data = reisudals1_df,
+       aes(x = transmission, y = residuals)) +
+  geom_point() + 
+  ggtitle("Model #1 Residuals Plot")
+```
+
+
+
+### Model #2
+```{r echo=FALSE}
+fit2 <- lm(mpg ~ wt*transmission, data = mtcars)
+```
+With model #2 we will seek to explain more of the variance by introducing more variables into the model. With the introduction of weight interacting on transmission, our model now tells us that:
+
+- r-squared of `r round(summary(fit2)$r.squared,4)` means that most of the variance is explained by the model
+- for automatic transmission cars:
+  - the intercept of `r summary(fit2)$coef[1,1]` is the MPG at the theoretical weight of 0
+  - for each 1000lb increase in weight, MPG will change by `r summary(fit2)$coef[2,1]`
+- for manual transmition cars:
+  - the intercept of `r summary(fit2)$coef[1,1] + summary(fit2)$coef[3,1]` is the MPG at the theoretical weight of 0
+  - for each 1000lb increase in weight, MPG will change by `r summary(fit2)$coef[2,1] + summary(fit2)$coef[4,1]`
+  
+One limitation of this model is that there is not a lot of overlap in weight between manual and automatic transmission cars. Generally, manual cars tend to be heavier which also correlates a lower MPG. For example at lighter weights manual cars have a lower MPG.
+
+```{r echo=FALSE}
+kable(summary(fit2)$coef)
+```
+
+```{r echo=FALSE, fig.width=5, fig.height=3}
+ggplot(data=mtcars, aes(x=wt, y=mpg, colour=transmission)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+```
+
+```{r echo=FALSE, fig.width=5, fig.height=3}
+residuals2 <- residuals(fit2)
+reisudals2_df <- data.frame(transmission = mtcars$transmission, residuals = residuals2, wt = mtcars$wt)
+ggplot(data = reisudals2_df,
+       aes(x = wt, y = residuals, colour = transmission)) +
+  geom_point() + 
+  ggtitle("Model #2 Residuals Plot")
+```
+
+# Appendix
+### Data
+```{r, echo=FALSE}
+kable(mtcars, caption = "mtcars data")
+```
+
+### T-Test Results
+```{r echo=FALSE, fig.width=5, fig.height=3}
+# plot
+ggplot(data = data.frame(x=c(-3,3)), aes(x)) + 
+  stat_function(fun = dnorm, args = (list(mean=0, sd=1))) + 
+  scale_y_continuous(breaks = NULL) + 
+  geom_vline(xintercept = t_test$statistic, colour = "red", alpha = 0.5) + 
+  geom_vline(xintercept = qt(0.975, t_test$parameter), colour = "blue", alpha = 0.5) + 
+  ylab("") + xlab("Standard Deviations") + ggtitle("T-Test Results") + 
+  geom_text(aes(x = qt(0.975, t_test$parameter), y = 0.36), 
+            label = "Upper end of 95%\n confidence interval", 
+            colour = "blue") + 
+  geom_text(aes(x = t_test$statistic-0.25, y = 0.25), 
+            label = paste0("Test statistic\n",as.character(round(t_test$statistic,4)))
+            , colour = "red")
+```

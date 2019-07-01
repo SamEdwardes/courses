@@ -16,7 +16,7 @@ mode        : selfcontained # {standalone, draft}
 ```{r setup, cache = F, echo = F, message = F, warning = F, tidy = F, results='hide'}
 # make this an external chunk that can be included in any file
 options(width = 100)
-opts_chunk$set(message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = 'fig/')
+#opts_chunk$set(message = F, error = F, warning = F, comment = NA, fig.align = 'center', dpi = 100, tidy = F, cache.path = '.cache/', fig.path = 'fig/')
 
 options(xtable.type = 'html')
 knit_hooks$set(inline = function(x) {
@@ -89,7 +89,7 @@ Rafael Irizarry, who wrote this post, link on the image)
 
 ---
 ```{r galton,fig.height=3.5,fig.width=8}
-library(UsingR); data(galton); library(reshape); long <- melt(galton)
+library(UsingR); data(galton); library(reshape2); long <- melt(galton)
 g <- ggplot(long, aes(x = value, fill = variable)) 
 g <- g + geom_histogram(colour = "black", binwidth=1) 
 g <- g + facet_grid(. ~ variable)
@@ -189,6 +189,7 @@ and children's heights
 
 ---
 ```{r, echo = TRUE, eval = FALSE}
+library(manipulate)
 y <- galton$child - mean(galton$child)
 x <- galton$parent - mean(galton$parent)
 freqData <- as.data.frame(table(x, y))
@@ -198,7 +199,7 @@ freqData$parent <- as.numeric(as.character(freqData$parent))
 myPlot <- function(beta){
     g <- ggplot(filter(freqData, freq > 0), aes(x = parent, y = child))
     g <- g  + scale_size(range = c(2, 20), guide = "none" )
-    g <- g + geom_point(colour="grey50", aes(size = freq+20, show_guide = FALSE))
+    g <- g + geom_point(colour="grey50", aes(size = freq+20))
     g <- g + geom_point(aes(colour=freq, size = freq))
     g <- g + scale_colour_gradient(low = "lightblue", high="white")                     
     g <- g + geom_abline(intercept = 0, slope = beta, size = 3)

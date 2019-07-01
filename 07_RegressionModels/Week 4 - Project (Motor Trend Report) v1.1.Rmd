@@ -1,0 +1,135 @@
+---
+output:
+  html_document: default
+---
+```{r include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+
+# load the data
+data(mtcars)
+num_records <- nrow(mtcars)
+
+# add model details
+mtcars$model <- rownames(mtcars)
+
+# clean the data
+mtcars <- mtcars %>% mutate(transmission = case_when(
+  am == 0 ~ "automatic",
+  TRUE ~ "manual"
+))
+
+automatic <- mtcars[mtcars$transmission == "automatic","mpg"]
+manual <- mtcars[mtcars$transmission == "manual","mpg"]
+t_test <- t.test(x=manual, y=automatic, alternative = "two.sided")
+```
+# Executive Summary
+
+Miles per gallon (MPG) is an important metric for any person considering to buy a car. Motor trend magazine has collected data from a series of cars to understand how different car attributes affect MPG. Specifically, we are interested in understanding:
+
+1. Is an automatic or manual transmission better for MPG?
+2. How much difference is there between automatic and manual transmission for MPG consumption?
+
+The analysis concluded that:
+- automatic cars have a lower MPG.
+- but this analysis is limited by confounding variables such as weight which could influence the results.
+
+# Exploring the data
+We collected `r num_records` observations to inform our study:
+
+```{r echo=FALSE, results='asis'}
+# print the data
+mtcars_summary <- mtcars %>%
+  group_by(transmission) %>%
+  summarise("Number of Observations" = n(), "Mean MPG" = round(mean(mpg),2))
+
+kable(mtcars_summary, caption = "Summary of observations")
+```
+
+To understand how transmission type effects MPG, we can compare the MPG observation between the two transmission types. From an initial comparison, it looks clear that automatic cars have a better (lower) MPG result than manual transmission cars.
+
+```{r echo=FALSE, fig.width=5, fig.height=3}
+# plot the data
+g <- ggplot(data = mtcars, aes(x=transmission, y=mpg, fill = transmission)) + 
+  geom_boxplot(width = 0.5) + 
+  geom_point(aes(), alpha = 0.5, size = 2) +
+  ggtitle("Automatic vs. Manual")
+g
+```
+
+We will now fit several models to understand if the difference is statistically significant, and if the method of predicting MPG using transmission type is useful.
+
+## Model #1
+```{r echo=FALSE}
+fit1 <- lm(mpg ~ transmission, data = mtcars)
+```
+
+Our first model will consider only MPG and transmission type. Using this simple model, we predict that:
+
+- if a car is automatic it will have a MPG of `r round(mean(automatic),4)`
+- if a car is manual it will have a mean of `r round(mean(manual),4)`
+
+The model also shows us that:
+
+- a low p-value indicates that the the difference is statistically significant
+- r-squared of `r round(summary(fit1)$r.squared,4)` means that there is still a lot of variance not yet explained by the model
+
+```{r echo=FALSE}
+kable(summary(fit1)$coef)
+```
+
+```{r echo=FALSE, fig.width=5, fig.height=3}
+residuals1 <- residuals(fit1)
+reisudals1_df <- data.frame(transmission = mtcars$transmission, residuals = residuals1)
+ggplot(data = reisudals1_df,
+       aes(x = transmission, y = residuals, colour = transmission)) +
+  geom_point() + 
+  ggtitle("Model #1 Residuals Plot")
+```
+
+
+## Model #2
+```{r echo=FALSE}
+fit2 <- lm(mpg ~ wt*transmission, data = mtcars)
+```
+With model #2 we will seek to explain more of the variance by introducing more variables into the model. With the introduction of weight interacting on transmission, our model now tells us that:
+
+- r-squared of `r round(summary(fit2)$r.squared,4)` means that most of the variance is explained by the model
+- the residual plot shows no patterns in the data, supporting the model is appropriate
+- for automatic transmission cars:
+  - the intercept of `r summary(fit2)$coef[1,1]` is the MPG at the theoretical weight of 0
+  - for each 1000lb increase in weight, MPG will change by `r summary(fit2)$coef[2,1]`
+- for manual transmission cars:
+  - the intercept of `r summary(fit2)$coef[1,1] + summary(fit2)$coef[3,1]` is the MPG at the theoretical weight of 0
+  - for each 1000lb increase in weight, MPG will change by `r summary(fit2)$coef[2,1] + summary(fit2)$coef[4,1]`
+  
+One limitation of this model is that there is not a lot of overlap in weight between manual and automatic transmission cars. Generally, manual cars tend to be heavier which also correlates a lower MPG. For example at lighter weights manual cars have a lower MPG.
+
+```{r echo=FALSE}
+kable(summary(fit2)$coef)
+```
+
+```{r echo=FALSE, fig.width=5, fig.height=3}
+ggplot(data=mtcars, aes(x=wt, y=mpg, colour=transmission)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+```
+
+```{r echo=FALSE, fig.width=5, fig.height=3}
+residuals2 <- residuals(fit2)
+reisudals2_df <- data.frame(transmission = mtcars$transmission, residuals = residuals2, wt = mtcars$wt)
+ggplot(data = reisudals2_df,
+       aes(x = wt, y = residuals, colour = transmission)) +
+  geom_point() + 
+  ggtitle("Model #2 Residuals Plot")
+```
+
+<P style="page-break-before: always">
+
+# Appendix
+
+```{r code=readLines(knitr::purl('/Users/samedwardes/Documents/GitHub/courses/07_RegressionModels/Week 4 - Project (Motor Trend Report) v1.1.Rmd', documentation = 0)), eval = FALSE}
+
+```
+
