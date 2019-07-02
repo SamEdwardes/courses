@@ -1,0 +1,71 @@
+---
+title: "Week 4"
+author: "Sam Edwardes"
+date: "June 12, 2019"
+output: html_document
+---
+
+# Week 4 Quiz
+## Q #1
+```{r}
+library(MASS)
+library(dplyr)
+data("shuttle")
+
+shuttle <- mutate(shuttle, use = relevel(use, ref = "noauto"))
+shuttle$use.bin <- as.integer(shuttle$use) - 1
+
+fit <- glm(use.bin ~ wind -1, data = shuttle, family = "binomial")
+
+summary(fit)
+
+exp(coef(fit))
+exp(coef(fit)[[1]])/exp(coef(fit)[[2]]) #0.9686
+```
+
+## Q #2
+```{r}
+fit <- glm(use.bin ~ wind +magn - 1, data = shuttle, family = "binomial")
+
+summary(fit)
+
+exp(coef(fit))
+exp(coef(fit)[[1]])/exp(coef(fit)[[2]]) #0.9684
+```
+
+## Q #3
+```{r}
+fit1 <- glm(use.bin ~ wind - 1, data = shuttle, family = "binomial")
+coef(fit1)
+
+fit2 <- glm(1-use.bin ~ wind -1, data = shuttle, family = "binomial")
+coef(fit2)
+```
+
+## Q #4
+```{r}
+data("InsectSprays")
+
+fit <- glm(count ~ spray - 1, data = InsectSprays, family = "poisson")
+summary(fit)$coef
+
+exp(summary(fit)$coef[1,1])/exp(summary(fit)$coef[2,1])
+
+```
+
+## Q #5
+```{r}
+
+```
+
+
+## Q #6
+```{r}
+x <- -5:5
+y <- c(5.12, 3.93, 2.67, 1.87, 0.52, 0.08, 0.93, 2.05, 2.54, 3.87, 4.97)
+
+plot(x,y)
+
+fit <- lm(y~x)
+```
+

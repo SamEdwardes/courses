@@ -1,0 +1,225 @@
+# Quiz Week 2
+
+## Q1
+Load the required packages for the quiz
+```{r}
+library(AppliedPredictiveModeling)
+data(segmentationOriginal)
+library(caret)
+```
+Load the libs I need
+```{r}
+library(rattle)
+library(rpart.plot)
+```
+
+Steps to load the data
+### Step 1
+Subset the data to a training set and testing set based on the Case variable in the data set.
+```{r}
+testing <- segmentationOriginal[segmentationOriginal$Case == "Test",]
+training <- segmentationOriginal[segmentationOriginal$Case == "Train",]
+```
+
+### Step 2
+Set the seed to 125 and fit a CART model to predict Class with the rpart method using all predictor variables and default caret settings.
+```{r}
+set.seed(125)
+
+# fit CART model
+fit <- train(Class ~ ., data = training, method = "rpart")
+```
+
+
+### Step 3
+In the final model what would be the final model prediction for cases with the following variable values:
+
+```{r}
+newdata_a <- data.frame(TotalIntench2 = 23000,
+                        FiberWidthCh1 = 10, 
+                        PerimStatusCh1 = 2)
+
+# predict(fit, newdata = newdata_a, type = "prob")
+fancyRpartPlot(fit$finalModel)
+```
+
+### Answers
+
+a. TotalIntench2 = 23,000; FiberWidthCh1 = 10; PerimStatusCh1=2
+
+**PS**
+
+b. TotalIntench2 = 50,000; FiberWidthCh1 = 10;VarIntenCh4 = 100
+
+**WS**
+
+c. TotalIntench2 = 57,000; FiberWidthCh1 = 8;VarIntenCh4 = 100
+
+**PS**
+
+d. FiberWidthCh1 = 8;VarIntenCh4 = 100; PerimStatusCh1=2
+
+**not possible to predict**
+
+## Q2
+
+If K is small in a K-fold cross validation is the bias in the estimate of out-of-sample (test set) accuracy smaller or bigger? *larger bias*
+
+If K is small is the variance in the estimate of out-of-sample (test set) accuracy smaller or bigger. *smaller*
+
+Is K large or small in leave one out cross validation? *small*
+
+- The bias is larger and the variance is smaller. Under leave one out cross validation K is equal to two.
+- The bias is smaller and the variance is bigger. Under leave one out cross validation K is equal to one.
+- The bias is smaller and the variance is smaller. Under leave one out cross validation K is equal to one.
+- **The bias is larger and the variance is smaller. Under leave one out cross validation K is equal to the sample size.**
+
+## Q3
+```{r}
+library("pgmm")
+data(olive)
+olive = olive[,-1]
+```
+
+These data contain information on 572 different Italian olive oils from multiple regions in Italy. Fit a classification tree where Area is the outcome variable. Then predict the value of area for the following data frame using the tree command with all defaults
+
+```{r}
+# model fil
+fit <- train(Area ~ .,
+             data = olive,
+             method = "rpart")
+
+# test data
+newdata = as.data.frame(t(colMeans(olive)))
+
+# predict
+predict(fit, newdata = newdata)
+
+# answer = 2.783
+```
+
+## Q4
+
+load the data
+```{r}
+library("ElemStatLearn")
+data(SAheart)
+set.seed(8484)
+train = sample(1:dim(SAheart)[1],size=dim(SAheart)[1]/2,replace=F)
+trainSA = SAheart[train,]
+testSA = SAheart[-train,]
+
+# from courera
+missClass = function(values,prediction){sum(((prediction > 0.5)*1) != values)/length(values)}
+```
+
+Then set the seed to 13234 and fit a logistic regression model (method="glm", be sure to specify family="binomial") with Coronary Heart Disease (chd) as the outcome and age at onset, current alcohol consumption, obesity levels, cumulative tabacco, type-A behavior, and low density lipoprotein cholesterol as predictors. Calculate the misclassification rate for your model using this function and a prediction on the "response" scale:
+
+```{r}
+# set seed
+set.seed(13234)
+
+fit <- train(chd ~ age + alcohol + obesity + tobacco + typea + ldl,
+             data = trainSA,
+             method = "glm",
+             family = "binomial")
+
+
+# answer
+missClass(testSA$chd, predict(fit, newdata = testSA)) # 0.281
+missClass(trainSA$chd, predict(fit, newdata = trainSA)) # 0.311
+```
+
+## Q4 v2
+
+Load the South Africa Heart Disease Data and create training and test sets with the following code:
+
+```{r}
+library(ElemStatLearn)
+data(SAheart)
+set.seed(8484)
+train = sample(1:dim(SAheart)[1],size=dim(SAheart)[1]/2,replace=F)
+trainSA = SAheart[train,]
+testSA = SAheart[-train,]
+```
+
+Then set the seed to 13234 and fit a logistic regression model (method="glm", be sure to specify family="binomial") with Coronary Heart Disease (chd) as the outcome and age at onset, current alcohol consumption, obesity levels, cumulative tabacco, type-A behavior, and low density lipoprotein cholesterol as predictors. Calculate the misclassification rate for your model using this function and a prediction on the "response" scale:
+
+```{r}
+missClass = function(values,prediction){sum(((prediction > 0.5)*1) != values)/length(values)}
+```
+
+What is the misclassification rate on the training set? What is the misclassification rate on the test set?
+### Answer
+
+```{r, fig.height=15}
+set.seed(13234)
+fit <- train(chd ~ age + alcohol + obesity + tobacco + typea + ldl, data=trainSA, method="glm", family="binomial")
+predictTrainSA <- predict(fit)
+missClass(trainSA$chd,predictTrainSA)
+predictTestSA <- predict(fit, testSA)
+missClass(testSA$chd,predictTestSA)
+```
+
+## Q4 v3
+```{r}
+library(ElemStatLearn)
+data(SAheart)
+set.seed(8484)
+train = sample(1:dim(SAheart)[1], size = dim(SAheart)[1] / 2, replace = F)
+trainSA = SAheart[train, ]
+testSA = SAheart[-train, ]
+
+missClass = function(values, prediction){sum(((prediction > 0.5) * 1) != values) / length(values)}
+
+set.seed(13234)
+modelSA <- train(chd ~ age + alcohol + obesity + tobacco + typea + ldl, 
+               data = trainSA, method = "glm", family = "binomial")
+
+missClass(testSA$chd, predict(modelSA, newdata = testSA))
+missClass(trainSA$chd, predict(modelSA, newdata = trainSA))
+```
+
+## Q5
+```{r}
+library(ElemStatLearn)
+data(vowel.train)
+data(vowel.test)
+```
+
+Set the variable y to be a factor variable in both the training and test set. Then set the seed to 33833. Fit a random forest predictor relating the factor variable y to the remaining variables. Read about variable importance in random forests here: http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#ooberr The caret package uses by default the Gini importance.
+
+Calculate the variable importance using the varImp function in the caret package. What is the order of variable importance?
+
+[NOTE: Use randomForest() specifically, not caret, as there's been some issues reported with that approach. 11/6/2016]
+
+```{r}
+library("randomForest")
+
+# set Y to a factor
+vowel.test$y <- factor(vowel.test$y)
+vowel.train$y <- factor(vowel.train$y)
+
+set.seed(33833)
+
+# fit the model
+fit <- randomForest(y ~ .,
+                    data = vowel.train)
+
+order(varImp(fit), decreasing = TRUE)
+
+```
+Answer: 
+MeanDecreaseGini
+x.1          87.27808
+x.2          87.26216
+x.3          33.71495
+x.4          36.71464
+x.5          51.98077
+x.6          45.38691
+x.7          31.15063
+x.8          42.12067
+x.9          33.64751
+x.10         29.83885
+
+ x.2, x.1, x.5, x.6, x.8, x.4, x.9, x.3, x.7, x.10

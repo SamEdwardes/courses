@@ -1,0 +1,191 @@
+# Quiz Week 2
+
+## Q #1
+```{r}
+library(AppliedPredictiveModeling)
+data(AlzheimerDisease)
+```
+## Q #2
+```{r fig.height=10, fig.width=10}
+library(AppliedPredictiveModeling)
+data(concrete)
+library(caret)
+set.seed(1000)
+inTrain = createDataPartition(mixtures$CompressiveStrength, p = 3/4)[[1]]
+training = mixtures[ inTrain,]
+testing = mixtures[-inTrain,]
+
+# Make a plot of the outcome (CompressiveStrength) versus the index of the samples. Color by each of the variables in the data set (you may find the cut2() function in the Hmisc package useful for turning continuous covariates into factors). What do you notice in these plots?
+library(ggplot2)
+library(GGally)
+library(Hmisc)
+
+training_raw <- training
+
+training$index <- rownames(training)
+training$CompressiveStrength_bin <- cut2(training$CompressiveStrength, g = 4)
+training$Age_bin <- cut2(training$Age, g = 4)
+training$FlyAsh_bin <- cut2(training$FlyAsh, g = 4)
+# 
+# ggpairs(data = training,
+#         columns = c("FlyAsh","Age","CompressiveStrength"),
+#         mapping = aes(colour = CompressiveStrength_bin))
+# 
+# # pairs plot
+# featurePlot(x=training, y=training$CompressiveStrength_bin, plot = "pairs")
+
+# outcome, index, age
+g1 <- ggplot(data = training, aes(x = index, y = CompressiveStrength, colour = Age_bin)) +
+    geom_point() + 
+    ggtitle("#1 Compressive Strength vs. Index/Age")
+g1 # does not explain pattern
+
+# outome vs. index
+# outcome, index, age
+g3 <- ggplot(data = training, aes(x = index, y = CompressiveStrength)) +
+    geom_point() + 
+    ggtitle("#3 Compressive Strength vs. Index")
+g3 # does not explain pattern
+
+# outcome, index, age
+g4 <- ggplot(data = training, aes(x = index, y = CompressiveStrength, colour = FlyAsh_bin)) +
+    geom_point() + 
+    ggtitle("#4 Compressive Strength vs. Index/Age")
+g4 # does not explain pattern
+
+## ggpairs
+training2 <- training_raw
+training2$CompressiveStrength_bin <- cut2(training$CompressiveStrength, g = 3)
+ggpairs(data = training2, mapping = ggplot2::aes(colour = CompressiveStrength_bin), progress = FALSE, axisLabels = "internal")
+
+# There is a non-random pattern in the plot of the outcome versus index that does not appear to be perfectly explained by any predictor suggesting a variable may be missing.
+
+```
+## Q #3
+```{r}
+# load the data
+library(AppliedPredictiveModeling)
+data(concrete)
+library(caret)
+set.seed(1000)
+inTrain = createDataPartition(mixtures$CompressiveStrength, p = 3/4)[[1]]
+training = mixtures[ inTrain,]
+testing = mixtures[-inTrain,]
+
+# clean data
+training2 <- training
+
+# Make a histogram and confirm the SuperPlasticizer variable is skewed. Normally you might use the log transform to try to make the data more symmetric. Why would that be a poor choice for this variable?
+g1 <- ggplot(data = training2) +
+    geom_histogram(aes(Superplasticizer))
+g1
+
+# using log
+training3 <- training
+training3$Superplasticizer <- log(training3$Superplasticizer)
+g2 <- ggplot(data = training3) +
+    geom_histogram(aes(Superplasticizer))
+g2
+
+# bad to log because big tail at 0
+```
+
+## Q #4
+```{r}
+library(caret)
+library(AppliedPredictiveModeling)
+set.seed(3433)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+# Find all the predictor variables in the training set that begin with IL. Perform principal components on these variables with the preProcess() function from the caret package. Calculate the number of principal components needed to capture 90% of the variance. How many are there?
+
+pattern_match <- grepl(pattern = "^IL", x = names(testing))
+trainingIL <- training[,pattern_match]
+# training2 <- bind_cols(training2, as.data.frame(training$diagnosis))
+str(training2)
+
+print("########## Pre Process ############")
+# perform PCA
+prePro <- preProcess(x = trainingIL,
+                  method = "pca",
+                  thresh = 0.9)
+prePro
+
+# 9 components required
+
+```
+
+## Q #5
+Create a training data set consisting of only the predictors with variable names beginning with IL and the diagnosis. Build two predictive models, one using the predictors as they are and one using PCA with principal components explaining 80% of the variance in the predictors. Use method="glm" in the train function.
+
+What is the accuracy of each method in the test set? Which is more accurate?
+```{r}
+library(caret)
+library(AppliedPredictiveModeling)
+set.seed(3433)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+# keep only variables names beginning with IL and diagnosis
+pattern_match <- grepl(pattern = "^IL|diagnosis", x = names(testing))
+training_IL <- training[,pattern_match]
+testing_IL <- testing[,pattern_match]
+
+
+# predictive model 1, non-PCA
+model <- train(diagnosis ~ .,
+               data = training_IL,
+               method = "glm")
+predict_model <- predict(model, newdata = testing_IL)
+matrix_model <- confusionMatrix(predict_model, testing_IL$diagnosis)
+matrix_model$overall[1]
+
+
+# predictive model 2, with PCA
+modelPCA <- train(diagnosis ~ .,
+                  data = training_IL,
+                  preProcess = "pca",
+                  trControl=trainControl(preProcOptions=list(thresh=0.8)))
+predict_model_PCA <- predict(modelPCA, newdata = testing_IL)
+matrix_model_PCA <- confusionMatrix(predict_model_PCA, testing_IL$diagnosis)
+matrix_model_PCA$overall[1]
+
+#65 and 72
+
+```
+## Q #5 attempt two
+```{r}
+library(caret)
+library(AppliedPredictiveModeling)
+set.seed(3433)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+# grep all columns with IL and diagnosis in the traning and testing set
+trainingIL <- training[,grep("^IL|diagnosis", names(training))]
+testingIL <- testing[,grep("^IL|diagnosis", names(testing))]
+
+# non-PCA
+model <- train(diagnosis ~ ., data = trainingIL, method = "glm")
+predict_model <- predict(model, newdata= testingIL)
+matrix_model <- confusionMatrix(predict_model, testingIL$diagnosis)
+matrix_model$overall[1]
+
+# PCA
+modelPCA <- train(diagnosis ~., data = trainingIL, method = "glm", preProcess = "pca",trControl=trainControl(preProcOptions=list(thresh=0.8)))
+matrix_modelPCA <- confusionMatrix(testingIL$diagnosis, predict(modelPCA, testingIL))
+matrix_modelPCA$overall[1]
+```
+
+
+# Other
